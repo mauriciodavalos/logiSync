@@ -1,31 +1,32 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { Ruta } from './types.d';
+import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 
 function App() {
-  const [rutas, setRutas] = useState([]);
-
-  useEffect(() => {
-    fetch('http://localhost:8000/api/v1/rutas')
-      .then((res) => res.json())
-      .then((data) => {
-        const rutasArray = data.data.rutas;
-        setRutas(rutasArray);
-      })
-      .catch((error) => console.error('An error occurred:', error));
-  }, []);
-
   return (
     <div>
-      <Header />
-      <section>
-        <CrearRuta />
-      </section>
-      <hr className="border-t border-gray-400 my-4 w-10/12 mx-auto" />
-      <section className="mt-5">
-        <h1 className="text-3xl text-center font-bold">Rutas Disponibles</h1>
-        <BuscarRutas rutas={rutas} />
-      </section>
+      <BrowserRouter>
+        <Header />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div>
+                <BuscarRutas />
+              </div>
+            }
+          />
+          <Route
+            path="/CrearRuta"
+            element={
+              <div>
+                <CrearRuta />
+              </div>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
@@ -38,19 +39,14 @@ function Header() {
         <nav>
           <ul className="flex space-x-4 justify-center mt-2">
             <li>
-              <a href="/" className="hover:underline">
-                Home
-              </a>
+              <NavLink to="/" className="hover:underline">
+                Buscar Rutas
+              </NavLink>
             </li>
             <li>
-              <a href="/about" className="hover:underline">
-                About
-              </a>
-            </li>
-            <li>
-              <a href="/contact" className="hover:underline">
-                Contact
-              </a>
+              <NavLink to="/CrearRuta" className="hover:underline">
+                Crear Ruta
+              </NavLink>
             </li>
           </ul>
         </nav>
@@ -201,52 +197,102 @@ function CrearRuta() {
   );
 }
 
-function BuscarRutas({ rutas }: { rutas: Ruta[] }) {
+function BuscarRutas() {
+  const [rutas, setRutas] = useState<Ruta | []>([]);
   const [selected, SetSelected] = useState<Ruta | null>(null);
+  const [startFilter, setStartFilter] = useState('');
+  const [endFilter, setEndFilter] = useState('');
+
+  useEffect(() => {
+    fetch('http://13.58.174.167:8000/api/v1/rutas')
+      .then((res) => res.json())
+      .then((data) => {
+        const rutasArray = data.data.rutas;
+        setRutas(rutasArray);
+      })
+      .catch((error) => console.error('An error occurred:', error));
+  }, []);
 
   function handleSelected(selection: Ruta) {
     SetSelected(selection);
   }
 
+  const filteredRutas: Ruta[] = rutas.filter((ruta) => {
+    return (
+      (startFilter === '' ||
+        ruta.startPoint.toLowerCase().includes(startFilter.toLowerCase())) &&
+      (endFilter === '' ||
+        ruta.endPoint.toLowerCase().includes(endFilter.toLowerCase()))
+    );
+  });
+
   return (
     <>
-      <div className="flex grid-cols-2">
+      <div className="max-w-md mx-auto mt-5 p-8 bg-white shadow-md rounded-md">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Selecciona el punto de Inicio
+          <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            placeholder="Filtrar por Punto de inicio"
+            onChange={(e) => setStartFilter(e.target.value)}
+          />
+        </label>
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Selecciona el punto de Destino
+          <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            placeholder="Filtrar por Punto de final"
+            onChange={(e) => setEndFilter(e.target.value)}
+          />
+        </label>
+      </div>
+      <div className="flex grid-cols-2 justify-center">
         <div className="m-3 ">
-          {rutas
-            .sort((b, a) => a.company.localeCompare(b.company))
-            .map((ruta) => {
-              return (
-                <div
-                  key={ruta._id}
-                  className="relative rounded-xl overflow-auto p-8 border-solid border mx-auto text-center mt-1">
-                  <h1 className="inline-block text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight dark:text-slate-200">
-                    {ruta.company}
-                  </h1>
-                  <ul className="list-disc text-left">
-                    <li>Topo de vehiculo: {ruta.vehicleType}</li>
-                    <li>Punto de Inicio: {ruta.startPoint}</li>
-                    <li>Punto de Destino: {ruta.endPoint}</li>
-                    <li>
-                      Fecha de inicio:{' '}
-                      {ruta.initialDate.toLocaleString().slice(0, 10)}
-                    </li>
-                    <li>Precio: {ruta.price}</li>
-                    <li>
-                      {ruta.availability === true
-                        ? '¡Disponible!'
-                        : 'No Disponible'}
-                    </li>
-                  </ul>
-                  <button
-                    className="px-4 py-2 font-semibold text-sm bg-blue-500 hover:bg-blue-700 text-white rounded-full shadow-sm mt-2"
-                    onClick={() => handleSelected(ruta)}>
-                    ¡Agendar!
-                  </button>
-                </div>
-              );
-            })}
+          {filteredRutas.length > 0 ? (
+            filteredRutas
+              .sort((b, a) => a.company.localeCompare(b.company))
+              .map((ruta) => {
+                return (
+                  <div
+                    key={ruta._id}
+                    className="relative rounded-xl overflow-auto p-8 border-solid border mx-auto text-center mt-1">
+                    <h1 className="inline-block text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight dark:text-slate-200">
+                      {ruta.company}
+                    </h1>
+                    <ul className="list-disc text-left">
+                      <li>Topo de vehiculo: {ruta.vehicleType}</li>
+                      <li>Punto de Inicio: {ruta.startPoint}</li>
+                      <li>Punto de Destino: {ruta.endPoint}</li>
+                      <li>
+                        Fecha de inicio:{' '}
+                        {ruta.initialDate.toLocaleString().slice(0, 10)}
+                      </li>
+                      <li>Precio: {ruta.price}</li>
+                      <li>
+                        {ruta.availability === true
+                          ? '¡Disponible!'
+                          : 'No Disponible'}
+                      </li>
+                    </ul>
+                    <button
+                      className="px-4 py-2 font-semibold text-sm bg-blue-500 hover:bg-blue-700 text-white rounded-full shadow-sm mt-2"
+                      onClick={() => handleSelected(ruta)}>
+                      ¡Agendar!
+                    </button>
+                  </div>
+                );
+              })
+          ) : (
+            <div>
+              <h1>No Existe ninguna ruta que se adecue a tus necesidades</h1>
+              <h1>Solicita una ruta para que un transportista te ayude</h1>
+              <button className="px-4 py-2 font-semibold text-sm bg-blue-500 hover:bg-blue-700 text-white rounded-full shadow-sm mt-2">
+                Solicitar una Ruta
+              </button>
+            </div>
+          )}
         </div>
-        <div className="hidden md:block fixed right-5 h-screen w-3/5 bg-white overflow-auto">
+        <div className="hidden md:block fixed right-5 h-screen w-1/3 bg-white overflow-auto">
           <SelectedRuta selected={selected} />
         </div>
       </div>

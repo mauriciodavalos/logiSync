@@ -10,6 +10,9 @@ export interface Data {
 }
 
 export interface Ruta {
+  filter(
+    arg0: (ruta: { startPoint: string; endPoint: string }) => boolean
+  ): Ruta[];
   availability: boolean;
   _id: string;
   company: string;
