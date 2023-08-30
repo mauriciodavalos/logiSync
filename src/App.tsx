@@ -204,7 +204,7 @@ function BuscarRutas() {
   const [endFilter, setEndFilter] = useState('');
 
   useEffect(() => {
-    fetch('http://13.58.174.167:8000/api/v1/rutas')
+    fetch('https://18.117.247.184/api/v1/rutas')
       .then((res) => res.json())
       .then((data) => {
         const rutasArray = data.data.rutas;
